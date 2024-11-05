@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "smart_pokedex"
+version = "0.0.0"
+description = "A CLI tool that identifies Pokemon from images and provides basic information using PokeAPI."
+authors = ["Maciej Krakowiak"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.dev-dependencies]
+requests = "^2.32.3"
+pillow = "^11.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
