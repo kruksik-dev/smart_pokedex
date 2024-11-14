@@ -21,11 +21,20 @@
 	"customizations": {
         "vscode": {
             "extensions":[
-				"ms-python.python", 
+				"ms-python.python",
 				"njpwerner.autodocstring",
 				"ms-python.vscode-pylance",
 				"eamodio.gitlens",
-				"github.vscode-pull-request-github"
+				"github.vscode-pull-request-github",
+				"ms-python.black-formatter",
+				"ms-python.flake8",
+				"donjayamanne.git-extension-pack",
+				"mhutchie.git-graph",
+				"donjayamanne.githistory",
+				"codezombiech.gitignore",
+				"codeavecjonathan.importmagic",
+				"ms-python.isort",
+				"ms-python.mypy-type-checker"
 			]}}
 
 	// 👇 Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
