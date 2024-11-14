@@ -6,7 +6,6 @@ from typing import Any, Generator
 import requests
 from PIL import Image
 
-logging.basicConfig(level=logging.INFO)
 _logger = logging.getLogger(__name__)
 
 
@@ -57,8 +56,3 @@ class PokemonImageLoader:
             img_path = save_path / f"{name}.png"
             img.save(img_path)
             _logger.info(f"Downloaded and saved {name} image under {img_path}")
-
-
-PokemonImageLoader().download_pokemon_images(
-    Path("/home/kruksik/own_projects/smart_pokedex")
-)
