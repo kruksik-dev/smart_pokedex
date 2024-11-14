@@ -1,12 +1,20 @@
 import logging
-from pathlib import Path
-import tensorflow as tf
 from abc import ABC, abstractmethod
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from pathlib import Path
+
+import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from tensorflow.keras.layers import (
+    BatchNormalization,
+    Conv2D,
+    Dense,
+    Dropout,
+    Flatten,
+    MaxPooling2D,
+)
+from tensorflow.keras.models import Sequential
+
 from smart_pokedex.model.data_loader import PokemonImagesDataLoader
-from tensorflow.keras.layers import BatchNormalization
 
 _logger = logging.getLogger(__name__)
 

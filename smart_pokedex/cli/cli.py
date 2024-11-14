@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from smart_pokedex.model.classifier import PokemonClassifier
 from smart_pokedex.model.data_loader import PokemonImagesDataLoader
 from smart_pokedex.utils.logger import setup_logging

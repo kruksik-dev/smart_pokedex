@@ -1,7 +1,8 @@
-import tensorflow as tf
-import numpy as np
-from tensorflow.keras.preprocessing import image
 from abc import ABC, abstractmethod
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing import image
 
 
 class Predictor(ABC):

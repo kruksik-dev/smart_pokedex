@@ -1,8 +1,9 @@
 import logging
 import logging.config
 import os
-import yaml
 from pathlib import Path
+
+import yaml
 
 
 def get_log_config_path() -> Path:
