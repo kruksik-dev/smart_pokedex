@@ -16,7 +16,7 @@ class PokemonPredictor(Predictor):
         self, model: tf.keras.Model, pokemon_class_indices: dict[str, int]
     ) -> None:
         self.model = model
-        self.pokemon_class_indices = {v: k for k, v in pokemon_class_indices.items()}
+        self.pokemon_class_indices = pokemon_class_indices
 
     def predict(self, img_path: str) -> str:
         img = image.load_img(img_path, target_size=self.model.input_shape[1:3])

@@ -1,5 +1,4 @@
 import logging
-from abc import ABC, abstractmethod
 from pathlib import Path
 
 import tensorflow as tf
@@ -19,34 +18,28 @@ from smart_pokedex.model.data_loader import PokemonImagesDataLoader
 _logger = logging.getLogger(__name__)
 
 
-class BaseModel(ABC):
-    def __init__(self) -> None:
-        self.model = None
+class PokemonClassifier:
 
-    @abstractmethod
-    def build_model(self) -> None:
-        pass
-
-    @abstractmethod
-    def compile_model(self) -> None:
-        pass
-
-    @abstractmethod
-    def train_model(self) -> None:
-        pass
-
-
-class PokemonClassifier(BaseModel):
-    def __init__(self, data_loader: PokemonImagesDataLoader, epochs: int = 20) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        data_loader: PokemonImagesDataLoader | None = None,
+        epochs: int = 20,
+        img_size: tuple[int, int] = (128, 128),
+        batch_size: int = 32,
+    ) -> None:
         self.epochs = epochs
         self.data_loader = data_loader
+        self.img_size = img_size
+        self.batch_size = batch_size
         self.training_results = None
-        self.data_loader_validation()
+        self.model = None
 
-    def data_loader_validation(self) -> None:
-        _logger.debug("Starting data loader validation ...")
-        required_attributes = ["train_data", "val_data", "num_classes"]
+    def validate_data_loader(self) -> None:
+        """
+        Validate that the data loader has the necessary data attributes.
+        """
+        _logger.debug("Validating data loader attributes...")
+        required_attributes = ["train_data", "test_data", "pokemon_class_indices"]
         missing_attributes = [
             attr for attr in required_attributes if not hasattr(self.data_loader, attr)
         ]
@@ -54,55 +47,64 @@ class PokemonClassifier(BaseModel):
             raise AttributeError(
                 f"Data loader is missing required attributes: {', '.join(missing_attributes)}"
             )
-        _logger.debug("Data loader validation done.")
+        _logger.debug("Data loader validated successfully.")
 
     def build_model(self) -> None:
-        _logger.info("Model building ...")
+        """
+        Build an improved CNN model for classification.
+        """
+        _logger.info("Building the model...")
+        self.validate_data_loader()
+
         self.model = Sequential(
             [
-                Conv2D(
-                    64,
-                    (3, 3),
-                    activation="relu",
-                    input_shape=(*self.data_loader.img_size, 3),
-                    kernel_initializer="he_normal",
-                ),
+                Conv2D(32, (3, 3), activation="relu", input_shape=(*self.img_size, 3)),
                 BatchNormalization(),
-                MaxPooling2D((2, 2)),
-                Conv2D(128, (3, 3), activation="relu", kernel_initializer="he_normal"),
+                MaxPooling2D(),
+                Conv2D(64, (3, 3), activation="relu"),
                 BatchNormalization(),
-                MaxPooling2D((2, 2)),
-                Conv2D(256, (3, 3), activation="relu", kernel_initializer="he_normal"),
+                MaxPooling2D(),
+                Conv2D(128, (3, 3), activation="relu"),
                 BatchNormalization(),
-                MaxPooling2D((2, 2)),
+                MaxPooling2D(),
+                Conv2D(256, (3, 3), activation="relu"),
+                BatchNormalization(),
+                MaxPooling2D(),
                 Flatten(),
-                Dense(256, activation="relu", kernel_initializer="he_normal"),
+                Dense(512, activation="relu"),
                 Dropout(0.5),
-                Dense(128, activation="relu", kernel_initializer="he_normal"),
-                Dense(self.data_loader.num_classes, activation="softmax"),
+                Dense(
+                    len(self.data_loader.pokemon_class_indices), activation="softmax"
+                ),
             ]
         )
+
         _logger.info("Model built successfully.")
 
     def compile_model(self) -> None:
+        """
+        Compile the model with the Adam optimizer and categorical crossentropy loss.
+        """
         if self.model is None:
             raise ValueError("Model must be built before it can be compiled.")
-        if not self.model.compiled:
-            _logger.info("Compiling model ...")
-            self.model.compile(
-                optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
-                loss="categorical_crossentropy",
-                metrics=["accuracy"],
-            )
-            _logger.info("Model compiled successfully.")
-        else:
-            _logger.warning("Model has already been compiled.")
+
+        _logger.info("Compiling the model...")
+        self.model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+            loss="categorical_crossentropy",
+            metrics=["accuracy"],
+        )
+        _logger.info("Model compiled successfully.")
 
     def train_model(self) -> None:
+        """
+        Train the model with the specified callbacks.
+        """
         if self.model is None:
             raise ValueError("Model must be built and compiled before training.")
 
-        _logger.info("Starting model training with augmentations and callbacks ...")
+        _logger.info("Starting model training with augmentations and callbacks...")
+
         early_stopping = EarlyStopping(
             monitor="val_loss", patience=5, restore_best_weights=True
         )
@@ -116,9 +118,10 @@ class PokemonClassifier(BaseModel):
         reduce_lr = ReduceLROnPlateau(
             monitor="val_loss", factor=0.5, patience=3, min_lr=1e-6, verbose=1
         )
+
         self.training_results = self.model.fit(
             self.data_loader.train_data,
-            validation_data=self.data_loader.val_data,
+            validation_data=self.data_loader.test_data,
             epochs=self.epochs,
             callbacks=[early_stopping, model_checkpoint, reduce_lr],
         )
@@ -126,16 +129,31 @@ class PokemonClassifier(BaseModel):
         _logger.info("Model training complete.")
 
     def evaluate(self) -> float:
-        _, val_accuracy = self.model.evaluate(self.data_loader.val_data)
-        _logger.info(f"Validation Accuracy: {val_accuracy * 100:.2f}%")
-        return val_accuracy
+        """
+        Evaluate the model on the test data.
+        """
+        if self.model is None:
+            raise ValueError("Model must be built before evaluation.")
+
+        _logger.info("Evaluating model...")
+        _, test_accuracy = self.model.evaluate(self.data_loader.test_data)
+        _logger.info(f"Test Accuracy: {test_accuracy * 100:.2f}%")
+        return test_accuracy
 
     def save_model(self, path: Path) -> None:
-        path.mkdir(parents=True, exist_ok=True)
+        """
+        Save the trained model to a specified path.
+        """
+        if self.model is None:
+            raise ValueError("Model must be built before saving.")
+
         self.model.save(path)
         _logger.info(f"Model saved to {path}")
 
     def load_model(self, path: Path) -> None:
+        """
+        Load a trained model from a specified path.
+        """
         if path.is_file() and path.suffix == ".keras":
             self.model = tf.keras.models.load_model(path)
             _logger.info(f"Model loaded from {path}")
