@@ -3,6 +3,9 @@ import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 from smart_pokedex.model.data_loader import PokemonImagesData
@@ -103,7 +106,6 @@ class PokemonClassifier(Classifier):
             batch_size (int): The batch size for training and evaluation. Defaults to 32.
         """
         self.epochs = epochs
-        self.data = data
         self.img_size = img_size
         self.batch_size = batch_size
         self.training_results = None
@@ -128,11 +130,8 @@ class PokemonClassifier(Classifier):
         self.model = tf.keras.models.Sequential(
             [
                 tf.keras.layers.Conv2D(
-                    32, (3, 3), activation="relu", input_shape=(*self.img_size, 3)
+                    64, (5, 5), activation="relu", input_shape=(*self.img_size, 3)
                 ),
-                tf.keras.layers.BatchNormalization(),
-                tf.keras.layers.MaxPooling2D(),
-                tf.keras.layers.Conv2D(64, (3, 3), activation="relu"),
                 tf.keras.layers.BatchNormalization(),
                 tf.keras.layers.MaxPooling2D(),
                 tf.keras.layers.Conv2D(128, (3, 3), activation="relu"),
@@ -142,8 +141,6 @@ class PokemonClassifier(Classifier):
                 tf.keras.layers.BatchNormalization(),
                 tf.keras.layers.MaxPooling2D(),
                 tf.keras.layers.Flatten(),
-                tf.keras.layers.Dense(512, activation="relu"),
-                tf.keras.layers.Dropout(0.5),
                 tf.keras.layers.Dense(
                     len(self.pokemon_class_indices), activation="softmax"
                 ),
@@ -163,6 +160,8 @@ class PokemonClassifier(Classifier):
             loss="categorical_crossentropy",
             metrics=["accuracy"],
         )
+        self.model.summary()
+        tf.keras.utils.plot_model(self.model, show_shapes=True)
         _logger.info("Model compiled successfully.")
 
     def train_model(self) -> None:
@@ -173,27 +172,32 @@ class PokemonClassifier(Classifier):
         _logger.info("Starting model training with augmentations and callbacks...")
 
         early_stopping = tf.keras.callbacks.EarlyStopping(
-            monitor="val_loss", patience=5, restore_best_weights=True
+            monitor="val_loss", mode="min", verbose=1, patience=7
         )
         model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
             "best_model.keras",
             save_best_only=True,
-            monitor="val_loss",
+            monitor="loss",
             mode="min",
             verbose=1,
         )
         reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
-            monitor="val_loss", factor=0.5, patience=3, min_lr=1e-6, verbose=1
+            monitor="loss", patience=3, verbose=1
         )
 
         self.training_results = self.model.fit(
             self._train_data,
-            validation_data=self._test_data,
             epochs=self.epochs,
+            validation_data=self._test_data,
             callbacks=[early_stopping, model_checkpoint, reduce_lr],
         )
 
         _logger.info("Model training complete.")
+
+    def plot_training_results(self) -> None:
+        _, ax = plt.subplots(figsize=(20, 6))
+        pd.DataFrame(self.training_results.history).iloc[:, :-1].plot(ax=ax)
+        plt.savefig("plot.png", bbox_inches="tight")
 
     def evaluate(self) -> float:
         """
@@ -272,53 +276,42 @@ class PokemonClassifier(Classifier):
             _logger.error(f"Failed to decode JSON from {metadata_path}: {e}")
             raise ValueError(f"Invalid JSON file at {metadata_path}: {e}")
 
-    def _preprocess_image(self, image_path: Path) -> tf.Tensor:
+    def predict(self, image_path: Path) -> str:
         """
-        Preprocess a single image for prediction.
+        Predict the class of a single image provided by the file path.
 
         Args:
-            image_path (Path): Path to the image file.
+            image_path (Path): The file path to the image.
 
         Returns:
-            tf.Tensor: Preprocessed image tensor ready for prediction.
+            str: The predicted class label (Pokémon species).
         """
-        # Load and decode the image
-        image = tf.io.read_file(str(image_path))
-        image = tf.image.decode_image(image, channels=3)
-
-        # Resize the image to match the input size of the model
-        image = tf.image.resize(image, self.img_size)
-        image = tf.cast(image, tf.float32) / 255.0  # Normalize to [0, 1]
-
-        # Add batch dimension for prediction
-        return tf.expand_dims(image, axis=0)
-
-    def predict(self, image_path: Path) -> dict:
-        """
-        Predict the class of a Pokémon image.
-
-        Args:
-            image_path (Path): Path to the image file.
-
-        Returns:
-            dict: A dictionary containing the predicted class and confidence scores.
-        """
+        # Check if model is initialized
         self._check_model_initialized()
 
-        # Preprocess the image
-        preprocessed_image = self._preprocess_image(image_path)
+        # Load the image
+        img = tf.keras.preprocessing.image.load_img(
+            image_path, target_size=self.img_size
+        )  # Resize to the input size of the model
 
-        # Perform prediction
-        predictions = self.model.predict(preprocessed_image)
-        predicted_index = tf.argmax(predictions[0]).numpy()
+        # Convert the image to a numpy array and normalize it
+        img_array = tf.keras.preprocessing.image.img_to_array(
+            img
+        )  # Convert image to array
+        img_array = np.expand_dims(
+            img_array, axis=0
+        )  # Add batch dimension (model expects a batch of images)
+        img_array /= 255.0  # Normalize to [0, 1] range
 
-        # Map index to class name
-        if not self.pokemon_class_indices:
-            raise ValueError("Class indices are not loaded. Cannot map predictions.")
-        predicted_class = self.pokemon_class_indices[str(predicted_index)]
+        # Make the prediction
+        prediction = self.model.predict(img_array)
 
-        return {
-            "predicted_class": predicted_class,
-            # "confidence_scores": confidence_scores.tolist(),
-            "image_path": image_path,
-        }
+        # Get the predicted class index
+        predicted_class_index = np.argmax(prediction, axis=1)[0]
+
+        # Retrieve the class label (Pokémon species name)
+        predicted_class_label = self.pokemon_class_indices.get(
+            str(predicted_class_index), "Unknown class"
+        )
+
+        return predicted_class_label

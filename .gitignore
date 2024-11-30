@@ -163,3 +163,5 @@ cython_debug/
 #.idea/
 **resources**
 **.keras**
+**train_data**
+**val_data**
