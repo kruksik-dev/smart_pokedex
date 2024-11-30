@@ -7,23 +7,18 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-requests = "^2.32.3"
-tensorflow = {extras = ["and-cuda"], version = "^2.18.0"}
-scikit-learn = "^1.5.2"
 pyyaml = "^6.0.2"
-pydot = "^3.0.2"
-graphviz = "^0.20.3"
-matplotlib = "^3.9.2"
-seaborn = "^0.13.2"
-opencv-python = "^4.10.0.84"
-pandas = "^2.2.3"
-
-[tool.poetry.dev-dependencies]
+tensorflow = "^2.18.0"
 requests = "^2.32.3"
-pillow = "^11.0.0"
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = "^4.0.1"
+tensorflow = {extras = ["and-cuda"], version = "^2.18.0"}
+scikit-learn = "^1.5.2"
+graphviz = "^0.20.3"
+matplotlib = "^3.9.3"
+seaborn = "^0.13.2"
+pytest = "^8.3.3"
+tox = "^4.23.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
