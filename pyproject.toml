@@ -10,6 +10,9 @@ python = "^3.11"
 pyyaml = "^6.0.2"
 tensorflow = "^2.18.0"
 requests = "^2.32.3"
+click = "^8.1.7"
+pyfiglet = "^1.0.2"
+colorama = "^0.4.6"
 
 [tool.poetry.group.dev.dependencies]
 tensorflow = {extras = ["and-cuda"], version = "^2.18.0"}
@@ -23,3 +26,7 @@ tox = "^4.23.2"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+smart-pokedex = "smart_pokedex.cli.cli:run_pokemon_classification"

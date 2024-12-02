@@ -259,7 +259,31 @@ class PokemonClassifier(Classifier):
         self.model = tf.keras.models.load_model(model_path)
         _logger.info("Model loaded successfully from file")
 
-    def predict(self, image_path: Path) -> str:
+    def load_model_with_metadata(self, model_path: Path, metadata_path: Path) -> None:
+        """
+        Load both the trained model and its metadata (class indices) from disk.
+
+        Args:
+            model_path (Path): Path to the saved model file.
+            metadata_path (Path): Path to the metadata (class indices file).
+        """
+        self.load_model(model_path)
+        if not metadata_path.is_file():
+            raise FileNotFoundError(f"Json metadata file not found at {metadata_path=}")
+        if metadata_path.suffix != ".json":
+            raise ValueError(
+                f"Expected a json metadata file, got {metadata_path.suffix}"
+            )
+        try:
+            with open(metadata_path, "r") as f:
+                class_indices = json.load(f)
+            self.pokemon_class_indices = class_indices
+            _logger.info(f"Class indices successfully loaded from {metadata_path}")
+        except json.JSONDecodeError as e:
+            _logger.error(f"Failed to decode JSON from {metadata_path}: {e}")
+            raise ValueError(f"Invalid JSON file at {metadata_path}: {e}")
+
+    def predict(self, image_path: Path) -> tuple[str, float]:
         """
         Predict the class of a Pokémon image.
 
@@ -277,6 +301,8 @@ class PokemonClassifier(Classifier):
         img_array = np.expand_dims(img_array, axis=0) / 255.0
         prediction = self.model.predict(img_array)
         predicted_class_index = np.argmax(prediction, axis=1)[0]
-        return self.pokemon_class_indices.get(
+        confidence = prediction[0][predicted_class_index] * 100
+        predicted_class_label = self.pokemon_class_indices.get(
             str(predicted_class_index), "Unknown class"
         )
+        return (predicted_class_label, confidence)

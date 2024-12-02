@@ -17,6 +17,14 @@ loggers:
     level: DEBUG  
     handlers: [console]
     propagate: no
+  tensorflow:
+    level: CRITICAL
+    handlers: [console]
+    propagate: no
+  absl:
+    level: CRITICAL
+    handlers: [console]
+    propagate: no
 
 root:
   level: WARNING
