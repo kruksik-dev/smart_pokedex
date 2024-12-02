@@ -3,9 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 
 from smart_pokedex.model.data_loader import PokemonImagesData
@@ -17,58 +15,64 @@ class Classifier(ABC):
     """
     Abstract base class for classifiers.
 
-    This class defines the common interface for building, training, evaluating,
-    saving, and loading machine learning models.
+    This class defines the interface for building, training, evaluating, saving,
+    and loading machine learning models. Subclasses must implement all abstract methods.
     """
 
     @abstractmethod
     def build_model(self) -> None:
         """
         Abstract method to build a machine learning model.
+
+        This method should define the model architecture.
         """
         pass
 
     @abstractmethod
     def compile_model(self) -> None:
         """
-        Abstract method to compile the model with the appropriate optimizer and loss function.
+        Abstract method to compile the model.
+
+        This method should configure the model's optimizer, loss function, and metrics.
         """
         pass
 
     @abstractmethod
     def train_model(self) -> None:
         """
-        Abstract method to train the model.
+        Abstract method to train the model on a dataset.
+
+        This method should include the logic for fitting the model.
         """
         pass
 
     @abstractmethod
     def evaluate(self) -> float:
         """
-        Abstract method to evaluate the model on test data.
+        Abstract method to evaluate the model's performance.
 
         Returns:
-            float: The test accuracy.
+            float: The evaluation metric, typically accuracy.
         """
         pass
 
     @abstractmethod
     def save_model(self, path: Path) -> None:
         """
-        Abstract method to save the trained model to disk.
+        Abstract method to save the trained model to a file.
 
         Args:
-            path (Path): The location to save the model.
+            path (Path): Path to save the model.
         """
         pass
 
     @abstractmethod
     def load_model(self, model_path: Path) -> None:
         """
-        Abstract method to load a trained model from disk.
+        Abstract method to load a trained model from a file.
 
         Args:
-            model_path (Path): The location of the saved model.
+            model_path (Path): Path to the saved model.
         """
         pass
 
@@ -77,15 +81,15 @@ class PokemonClassifier(Classifier):
     """
     A classifier for Pokémon image datasets.
 
-    This class provides functionality for building, compiling, training,
-    evaluating, and saving/loading models specifically for classifying Pokémon images.
+    This class provides methods for building, compiling, training, evaluating,
+    saving, and loading machine learning models specifically for classifying Pokémon images.
 
     Attributes:
-        data (PokemonImagesData | None): The dataset containing the training and test data.
-        epochs (int): The number of epochs for training.
-        img_size (tuple[int, int]): The size to which input images are resized.
-        batch_size (int): The batch size for training and evaluation.
-        model (tf.keras.Model | None): The TensorFlow model.
+        data (PokemonImagesData | None): Dataset containing training and validation data.
+        epochs (int): Number of training epochs.
+        img_size (tuple[int, int]): Input image size (width, height).
+        batch_size (int): Batch size for training and evaluation.
+        model (tf.keras.Model | None): TensorFlow model instance.
         pokemon_class_indices (Dict[int, str]): Mapping of class indices to Pokémon species names.
     """
 
@@ -102,7 +106,7 @@ class PokemonClassifier(Classifier):
         Args:
             data (PokemonImagesData | None): The dataset containing Pokémon image data. Defaults to None.
             epochs (int): The number of epochs to train the model. Defaults to 20.
-            img_size (tuple[int, int]): The target size for resizing images. Defaults to (128, 128).
+            img_size (tuple[int, int]): The target size for resizing images (width, height). Defaults to (128, 128).
             batch_size (int): The batch size for training and evaluation. Defaults to 32.
         """
         self.epochs = epochs
@@ -115,16 +119,21 @@ class PokemonClassifier(Classifier):
         self.pokemon_class_indices = getattr(data, "pokemon_class_indices", None)
 
     def _check_model_initialized(self) -> None:
-        """Helper function to check if the model has been initialized."""
+        """
+        Helper method to ensure the model is built before use.
+
+        Raises:
+            ValueError: If the model is not initialized.
+        """
         if self.model is None:
             raise ValueError("Model must be built before it can be used.")
 
     def build_model(self) -> None:
         """
-        Build the convolutional neural network (CNN) model for Pokémon classification.
+        Build the convolutional neural network (CNN) for Pokémon image classification.
 
-        The model is built using several convolutional layers, batch normalization,
-        max pooling, and dense layers.
+        The CNN consists of convolutional layers with batch normalization, max-pooling layers,
+        and a fully connected layer with a softmax activation for multi-class classification.
         """
         _logger.info("Building the model...")
         self.model = tf.keras.models.Sequential(
@@ -146,12 +155,13 @@ class PokemonClassifier(Classifier):
                 ),
             ]
         )
-
         _logger.info("Model built successfully.")
 
     def compile_model(self) -> None:
         """
-        Compile the model with the Adam optimizer and categorical crossentropy loss.
+        Compile the CNN model with the Adam optimizer and categorical crossentropy loss.
+
+        This method also configures accuracy as the evaluation metric.
         """
         self._check_model_initialized()
         _logger.info("Compiling the model...")
@@ -166,7 +176,9 @@ class PokemonClassifier(Classifier):
 
     def train_model(self) -> None:
         """
-        Train the model using the training dataset and specified callbacks.
+        Train the CNN model on the training dataset.
+
+        Implements callbacks for early stopping, checkpointing the best model, and learning rate reduction.
         """
         self._check_model_initialized()
         _logger.info("Starting model training with augmentations and callbacks...")
@@ -194,17 +206,12 @@ class PokemonClassifier(Classifier):
 
         _logger.info("Model training complete.")
 
-    def plot_training_results(self) -> None:
-        _, ax = plt.subplots(figsize=(20, 6))
-        pd.DataFrame(self.training_results.history).iloc[:, :-1].plot(ax=ax)
-        plt.savefig("plot.png", bbox_inches="tight")
-
     def evaluate(self) -> float:
         """
-        Evaluate the model on the test dataset.
+        Evaluate the model's accuracy on the test dataset.
 
         Returns:
-            float: The test accuracy as a percentage.
+            float: The test accuracy as a fraction (e.g., 0.95 for 95% accuracy).
         """
         self._check_model_initialized()
         _logger.info("Evaluating model...")
@@ -214,7 +221,7 @@ class PokemonClassifier(Classifier):
 
     def save_model(self, path: Path) -> None:
         """
-        Save the trained model to the specified path.
+        Save the trained model to the specified file path.
 
         Args:
             path (Path): Path where the model will be saved.
@@ -226,7 +233,7 @@ class PokemonClassifier(Classifier):
 
     def save_model_with_metadata(self, model_path: Path, metadata_path: Path) -> None:
         """
-        Save the trained model and its associated metadata (class indices) to disk.
+        Save the trained model and its class indices metadata to disk.
 
         Args:
             model_path (Path): Path to save the model file.
@@ -240,7 +247,7 @@ class PokemonClassifier(Classifier):
 
     def load_model(self, model_path: Path) -> None:
         """
-        Load a trained model from the specified path.
+        Load a trained model from the specified file path.
 
         Args:
             model_path (Path): Path to the saved model.
@@ -252,66 +259,24 @@ class PokemonClassifier(Classifier):
         self.model = tf.keras.models.load_model(model_path)
         _logger.info("Model loaded successfully from file")
 
-    def load_model_with_metadata(self, model_path: Path, metadata_path: Path) -> None:
-        """
-        Load both the trained model and its metadata (class indices) from disk.
-
-        Args:
-            model_path (Path): Path to the saved model file.
-            metadata_path (Path): Path to the metadata (class indices file).
-        """
-        self.load_model(model_path)
-        if not metadata_path.is_file():
-            raise FileNotFoundError(f"Json metadata file not found at {metadata_path=}")
-        if metadata_path.suffix != ".json":
-            raise ValueError(
-                f"Expected a json metadata file, got {metadata_path.suffix}"
-            )
-        try:
-            with open(metadata_path, "r") as f:
-                class_indices = json.load(f)
-            self.pokemon_class_indices = class_indices
-            _logger.info(f"Class indices successfully loaded from {metadata_path}")
-        except json.JSONDecodeError as e:
-            _logger.error(f"Failed to decode JSON from {metadata_path}: {e}")
-            raise ValueError(f"Invalid JSON file at {metadata_path}: {e}")
-
     def predict(self, image_path: Path) -> str:
         """
-        Predict the class of a single image provided by the file path.
+        Predict the class of a Pokémon image.
 
         Args:
-            image_path (Path): The file path to the image.
+            image_path (Path): Path to the input image.
 
         Returns:
-            str: The predicted class label (Pokémon species).
+            str: Predicted Pokémon species name.
         """
-        # Check if model is initialized
         self._check_model_initialized()
-
-        # Load the image
         img = tf.keras.preprocessing.image.load_img(
             image_path, target_size=self.img_size
-        )  # Resize to the input size of the model
-
-        # Convert the image to a numpy array and normalize it
-        img_array = tf.keras.preprocessing.image.img_to_array(
-            img
-        )  # Convert image to array
-        img_array = np.expand_dims(
-            img_array, axis=0
-        )  # Add batch dimension (model expects a batch of images)
-        img_array /= 255.0  # Normalize to [0, 1] range
-
-        # Make the prediction
+        )
+        img_array = tf.keras.preprocessing.image.img_to_array(img)
+        img_array = np.expand_dims(img_array, axis=0) / 255.0
         prediction = self.model.predict(img_array)
-
-        # Get the predicted class index
         predicted_class_index = np.argmax(prediction, axis=1)[0]
-
-        # Retrieve the class label (Pokémon species name)
-        predicted_class_label = self.pokemon_class_indices.get(
+        return self.pokemon_class_indices.get(
             str(predicted_class_index), "Unknown class"
         )
-
-        return predicted_class_label
