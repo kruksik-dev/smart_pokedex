@@ -24,8 +24,12 @@ def mock_pokemon_data() -> dict[str, str]:
 @pytest.mark.parametrize("start_id, end_id", [(1, 2), (1, 3)])
 @patch("smart_pokedex.utils.image_loader.requests.get")
 def test_download_pokemon_images(
-    mock_get, mock_output_path, start_id, end_id, mock_pokemon_data
-):
+    mock_get: MagicMock,
+    mock_output_path: Path,
+    start_id: int,
+    end_id: int,
+    mock_pokemon_data: dict[str, str],
+) -> None:
     mock_response = MagicMock()
     mock_response.json.return_value = mock_pokemon_data
     mock_response.content = b"fake image content"
@@ -36,7 +40,7 @@ def test_download_pokemon_images(
     loader = PokemonImageLoader()
     loader.download_pokemon_images(mock_output_path, start_id, end_id)
 
-    assert mock_get.call_count == (end_id - start_id)
+    assert mock_get.call_count == (end_id - start_id + 1) * 2
     for pokemon_id in range(start_id, end_id):
         mock_get.assert_any_call(f"https://pokeapi.co/api/v2/pokemon/{pokemon_id}")
 
@@ -45,8 +49,8 @@ def test_download_pokemon_images(
 @patch("smart_pokedex.utils.image_loader.PokemonImageLoader._save_image_from_url")
 def test_download_images_for_pokemon(
     mock_save_image: MagicMock,
-    mock_output_path: MagicMock,
     mock_pokemon_data: MagicMock,
+    mock_output_path: Path,
 ) -> None:
     loader = PokemonImageLoader()
     loader._download_images_for_pokemon(mock_pokemon_data, mock_output_path)
@@ -58,7 +62,7 @@ def test_download_images_for_pokemon(
     )
 
 
-def test_get_pokemon_image_urls(mock_pokemon_data):
+def test_get_pokemon_image_urls(mock_pokemon_data: dict[str, str]) -> None:
     urls = list(
         PokemonImageLoader._get_pokemon_image_urls(mock_pokemon_data["sprites"])
     )

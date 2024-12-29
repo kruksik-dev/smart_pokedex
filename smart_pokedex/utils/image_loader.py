@@ -32,7 +32,7 @@ class PokemonImageLoader:
         """
         output_path.mkdir(parents=True, exist_ok=True)
 
-        for pokemon_id in range(start_id, end_id):
+        for pokemon_id in range(start_id, end_id + 1):
             url = f"{self._POKEMON_API_URL}/{pokemon_id}"
             try:
                 response = requests.get(url)
@@ -64,7 +64,7 @@ class PokemonImageLoader:
             return
 
         pokemon_output_path = output_path / pokemon_name
-        pokemon_output_path.mkdir(parents=True, exist_ok=True)
+        pokemon_output_path.mkdir(exist_ok=True)
 
         image_id = 1
         for url in self._get_pokemon_image_urls(pokemon_data["sprites"]):
