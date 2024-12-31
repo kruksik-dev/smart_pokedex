@@ -5,7 +5,7 @@ from typing import Any
 
 import tensorflow as tf
 
-from smart_pokedex.model.image_data import PokemonImagesData
+from smart_pokedex.model.image_objects import PokemonImagesData
 
 _logger = logging.getLogger(__name__)
 
