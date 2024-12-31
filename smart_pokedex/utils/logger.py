@@ -5,6 +5,8 @@ from pathlib import Path
 
 import yaml
 
+from smart_pokedex import ROOT_PATH
+
 
 def get_log_config_path() -> Path:
     """
@@ -20,7 +22,7 @@ def get_log_config_path() -> Path:
     log_config_path = os.getenv("LOGGING_CONFIG_PATH")
     if log_config_path:
         return Path(log_config_path)
-    return Path(__file__).parent.resolve() / "logging.yml"
+    return ROOT_PATH / "logging.yml"
 
 
 def setup_logging() -> None:

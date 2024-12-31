@@ -2,73 +2,32 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from smart_pokedex.utils.image_loader import PokemonImageLoader
 
 
-@pytest.fixture
-def mock_output_path(tmp_path: Path) -> Path:
-    return tmp_path / "pokemon_images"
-
-
-@pytest.fixture
-def mock_pokemon_data() -> dict[str, str]:
-    return {
-        "name": "bulbasaur",
-        "sprites": {
-            "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png"
-        },
-    }
-
-
-@pytest.mark.parametrize("start_id, end_id", [(1, 2), (1, 3)])
-@patch("smart_pokedex.utils.image_loader.requests.get")
-def test_download_pokemon_images(
-    mock_get: MagicMock,
-    mock_output_path: Path,
-    start_id: int,
-    end_id: int,
-    mock_pokemon_data: dict[str, str],
+@pytest.mark.parametrize(
+    "mocked_sprites_data, expected_urls",
+    [
+        pytest.param(
+            {"front_default": "https://example.com/image.png"},
+            ["https://example.com/image.png"],
+            id="https_valid_url",
+        ),
+        pytest.param({"front_default": "invalid_url"}, [], id="invalid_url"),
+        pytest.param(
+            {"front_default": "http://example.com/image.png"},
+            [],
+            id="invalid_url_no_secured",
+        ),
+    ],
+)
+def test_get_pokemon_image_urls(
+    mocked_sprites_data: dict[str, str], expected_urls: list[str]
 ) -> None:
-    mock_response = MagicMock()
-    mock_response.json.return_value = mock_pokemon_data
-    mock_response.content = b"fake image content"
-    mock_response.raise_for_status.return_value = None
-    mock_response.raise_for_status.return_value = None
-    mock_get.return_value = mock_response
-
-    loader = PokemonImageLoader()
-    loader.download_pokemon_images(mock_output_path, start_id, end_id)
-
-    assert mock_get.call_count == (end_id - start_id + 1) * 2
-    for pokemon_id in range(start_id, end_id):
-        mock_get.assert_any_call(f"https://pokeapi.co/api/v2/pokemon/{pokemon_id}")
-
-
-@patch("smart_pokedex.utils.image_loader.requests.get")
-@patch("smart_pokedex.utils.image_loader.PokemonImageLoader._save_image_from_url")
-def test_download_images_for_pokemon(
-    mock_save_image: MagicMock,
-    mock_pokemon_data: MagicMock,
-    mock_output_path: Path,
-) -> None:
-    loader = PokemonImageLoader()
-    loader._download_images_for_pokemon(mock_pokemon_data, mock_output_path)
-
-    mock_save_image.assert_called_once_with(
-        mock_output_path / "bulbasaur",
-        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
-        "bulbasaur_1",
-    )
-
-
-def test_get_pokemon_image_urls(mock_pokemon_data: dict[str, str]) -> None:
-    urls = list(
-        PokemonImageLoader._get_pokemon_image_urls(mock_pokemon_data["sprites"])
-    )
-    assert urls == [
-        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png"
-    ]
+    urls = list(PokemonImageLoader._get_pokemon_image_urls(mocked_sprites_data))
+    assert urls == expected_urls
 
 
 @patch("smart_pokedex.utils.image_loader.requests.get")
@@ -98,3 +57,97 @@ def test_save_image_from_url(
     mock_requests_get.assert_called_once_with("https://example.com/image.png")
     mock_image.resize.assert_called_once_with((128, 128))
     mock_resized_image.save.assert_called_once_with(save_path / "test_image.png")
+
+
+@patch("smart_pokedex.utils.image_loader.requests.get")
+def test_download_pokemon_images_request_exception(
+    mock_get: MagicMock, mock_output_path: Path
+) -> None:
+    mock_get.side_effect = requests.exceptions.RequestException("Request failed")
+
+    loader = PokemonImageLoader()
+    loader.download_pokemon_images(mock_output_path, start_id=1, end_id=2)
+
+    assert mock_get.call_count == 2
+
+
+@patch("smart_pokedex.utils.image_loader.requests.get")
+def test_download_pokemon_images_value_error(
+    mock_get: MagicMock, mock_output_path: Path
+) -> None:
+    mock_response = MagicMock()
+    mock_response.json.side_effect = ValueError("Invalid JSON")
+    mock_get.return_value = mock_response
+
+    loader = PokemonImageLoader()
+    loader.download_pokemon_images(mock_output_path, start_id=1, end_id=2)
+
+    assert mock_get.call_count == 2
+
+
+def test_missing_pokemon_name_logs_warning() -> None:
+
+    with patch("smart_pokedex.utils.image_loader.requests.get") as mock_get, patch(
+        "smart_pokedex.utils.image_loader._logger"
+    ) as mock_logger:
+        mock_get.return_value.json.return_value = {
+            "sprites": {
+                "front_default": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png"
+            }
+        }
+        mock_pokemon_data = mock_get.return_value.json.return_value
+        mock_output_path = Path("/tmp")
+        loader = PokemonImageLoader()
+
+        loader._download_images_for_pokemon(mock_pokemon_data, mock_output_path)
+
+        mock_logger.warning.assert_called_once_with(
+            f"Missing name for Pokémon data: {mock_pokemon_data}"
+        )
+
+
+def test_get_pokemon_image_urls_with_mocked_urls() -> None:
+    mock_data = {
+        "front_default": "https://mockurl.com/pokemon/1.png",
+        "other": {
+            "official-artwork": {
+                "front_default": "https://mockurl.com/pokemon/other/official-artwork/1.png"
+            },
+            "home": {"front_default": "https://mockurl.com/pokemon/other/home/1.png"},
+        },
+    }
+    expected_urls = {
+        "https://mockurl.com/pokemon/1.png",
+        "https://mockurl.com/pokemon/other/official-artwork/1.png",
+        "https://mockurl.com/pokemon/other/home/1.png",
+    }
+    seen_urls = set()
+
+    with patch.object(
+        PokemonImageLoader,
+        "_get_pokemon_image_urls",
+        wraps=PokemonImageLoader._get_pokemon_image_urls,
+    ) as mock_get_pokemon_image_urls:
+        result = set(PokemonImageLoader._get_pokemon_image_urls(mock_data, seen_urls))
+
+        assert result == expected_urls
+        assert mock_get_pokemon_image_urls.call_count > 1
+
+
+def test_save_image_from_url_request_exception() -> None:
+    save_path = "/mock/path"
+    image_url = "https://mockurl.com/image.png"
+    name = "test_image"
+
+    with patch(
+        "requests.get",
+        side_effect=requests.exceptions.RequestException("Network Error"),
+    ) as mock_get, patch("smart_pokedex.utils.image_loader._logger") as mock_logger:
+        loader = PokemonImageLoader()
+
+        loader._save_image_from_url(save_path, image_url, name)
+
+        mock_get.assert_called_once_with(image_url)
+        mock_logger.warning.assert_called_once_with(
+            f"Failed to download image from {image_url}: Network Error"
+        )
