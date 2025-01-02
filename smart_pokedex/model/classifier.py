@@ -2,6 +2,7 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any, Callable
 
 import numpy as np
 import tensorflow as tf
@@ -118,15 +119,24 @@ class PokemonClassifier(Classifier):
         self._test_data = getattr(data, "test_data", None)
         self.pokemon_class_indices = getattr(data, "pokemon_class_indices", None)
 
-    def _check_model_initialized(self) -> None:
+    @staticmethod
+    def check_model_initialized(func: Callable) -> Callable:
         """
-        Helper method to ensure the model is built before use.
+        Decorator to ensure the model is built before executing the decorated method.
 
-        Raises:
-            ValueError: If the model is not initialized.
+        Args:
+            func (Callable): The method to decorate.
+
+        Returns:
+            Callable: The wrapped method.
         """
-        if self.model is None:
-            raise ValueError("Model must be built before it can be used.")
+
+        def wrapper(self, *args, **kwargs) -> Any:
+            if self.model is None:
+                raise ValueError("Model must be built before it can be used.")
+            return func(self, *args, **kwargs)
+
+        return wrapper
 
     def build_model(self) -> None:
         """
@@ -157,13 +167,14 @@ class PokemonClassifier(Classifier):
         )
         _logger.info("Model built successfully.")
 
+    @check_model_initialized
     def compile_model(self) -> None:
         """
         Compile the CNN model with the Adam optimizer and categorical crossentropy loss.
 
         This method also configures accuracy as the evaluation metric.
         """
-        self._check_model_initialized()
+
         _logger.info("Compiling the model...")
         self.model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
@@ -171,16 +182,16 @@ class PokemonClassifier(Classifier):
             metrics=["accuracy"],
         )
         self.model.summary()
-        tf.keras.utils.plot_model(self.model, show_shapes=True)
         _logger.info("Model compiled successfully.")
 
+    @check_model_initialized
     def train_model(self) -> None:
         """
         Train the CNN model on the training dataset.
 
         Implements callbacks for early stopping, checkpointing the best model, and learning rate reduction.
         """
-        self._check_model_initialized()
+
         _logger.info("Starting model training with augmentations and callbacks...")
 
         early_stopping = tf.keras.callbacks.EarlyStopping(
@@ -206,6 +217,7 @@ class PokemonClassifier(Classifier):
 
         _logger.info("Model training complete.")
 
+    @check_model_initialized
     def evaluate(self) -> float:
         """
         Evaluate the model's accuracy on the test dataset.
@@ -213,12 +225,12 @@ class PokemonClassifier(Classifier):
         Returns:
             float: The test accuracy as a fraction (e.g., 0.95 for 95% accuracy).
         """
-        self._check_model_initialized()
         _logger.info("Evaluating model...")
         _, test_accuracy = self.model.evaluate(self._test_data)
         _logger.info(f"Test Accuracy: {test_accuracy * 100:.2f}%")
         return test_accuracy
 
+    @check_model_initialized
     def save_model(self, path: Path) -> None:
         """
         Save the trained model to the specified file path.
@@ -227,7 +239,6 @@ class PokemonClassifier(Classifier):
             path (Path): Path where the model will be saved.
         """
         path.parent.mkdir(parents=True, exist_ok=True)
-        self._check_model_initialized()
         self.model.save(path)
         _logger.info(f"Model saved to {path}")
 
@@ -283,6 +294,7 @@ class PokemonClassifier(Classifier):
             _logger.error(f"Failed to decode JSON from {metadata_path}: {e}")
             raise ValueError(f"Invalid JSON file at {metadata_path}: {e}")
 
+    @check_model_initialized
     def predict(self, image_path: Path) -> tuple[str, float]:
         """
         Predict the class of a Pokémon image.
@@ -293,7 +305,6 @@ class PokemonClassifier(Classifier):
         Returns:
             str: Predicted Pokémon species name.
         """
-        self._check_model_initialized()
         img = tf.keras.preprocessing.image.load_img(
             image_path, target_size=self.img_size
         )

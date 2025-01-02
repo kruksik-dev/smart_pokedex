@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import click
@@ -36,7 +35,6 @@ def display_prediction(predicted_class: str, confidence: float) -> None:
     help="Path to pokemon image file",
 )
 def run_pokemon_classification(image_path: Path) -> None:
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     setup_logging()
     poke_classifier = PokemonClassifier(img_size=(64, 64))
     poke_classifier.load_model_with_metadata(
