@@ -644,6 +644,23 @@ files = [
 ]
 
 [[package]]
+name = "jinja2"
+version = "3.1.5"
+description = "A very fast and expressive template engine."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "jinja2-3.1.5-py3-none-any.whl", hash = "sha256:aba0f4dc9ed8013c424088f68a5c226f7d6097ed89b246d7749c2ec4175c6adb"},
+    {file = "jinja2-3.1.5.tar.gz", hash = "sha256:8fefff8dc3034e27bb80d67c671eb8a9bc424c0ef4c0826edbff304cceff43bb"},
+]
+
+[package.dependencies]
+MarkupSafe = ">=2.0"
+
+[package.extras]
+i18n = ["Babel (>=2.7)"]
+
+[[package]]
 name = "joblib"
 version = "1.4.2"
 description = "Lightweight pipelining with Python functions"
@@ -2140,6 +2157,24 @@ files = [
 ]
 
 [[package]]
+name = "towncrier"
+version = "24.8.0"
+description = "Building newsfiles for your project."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "towncrier-24.8.0-py3-none-any.whl", hash = "sha256:9343209592b839209cdf28c339ba45792fbfe9775b5f9c177462fd693e127d8d"},
+    {file = "towncrier-24.8.0.tar.gz", hash = "sha256:013423ee7eed102b2f393c287d22d95f66f1a3ea10a4baa82d298001a7f18af3"},
+]
+
+[package.dependencies]
+click = "*"
+jinja2 = "*"
+
+[package.extras]
+dev = ["furo (>=2024.05.06)", "nox", "packaging", "sphinx (>=5)", "twisted"]
+
+[[package]]
 name = "tox"
 version = "4.23.2"
 description = "tox is a generic virtualenv management and test command line tool"
@@ -2331,4 +2366,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "f4da88fe0b98eca7c7f16b7586d04b3914361ed7df92645d9457cae5e23494c4"
+content-hash = "c0b205895ebfbc5292d0ff4e59817fdf046b3dcda875c438e7a66595630ff7c2"

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "smart_pokedex"
-version = "0.0.0"
+version = "0.0.1"
 description = "A CLI tool that identifies Pokemon from images and provides basic information using PokeAPI."
 authors = ["Maciej Krakowiak"]
 license = "MIT"
@@ -23,6 +23,7 @@ seaborn = "^0.13.2"
 pytest = "^8.3.3"
 tox = "^4.23.2"
 pytest-cov = "^6.0.0"
+towncrier = "^24.8.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -31,3 +32,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 smart-pokedex = "smart_pokedex.cli.cli:run_pokemon_classification"
+
+
+[tool.towncrier]
+package = "smart_pokedex"
+changelog = "CHANGELOG.rst"
+directory = "changelog"
