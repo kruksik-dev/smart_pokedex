@@ -32,7 +32,5 @@ build-backend = "poetry.core.masonry.api"
 smart-pokedex = "smart_pokedex.cli.cli:run_pokemon_classification"
 
 
-[tool.towncrier]
-package = "smart_pokedex"
-changelog = "CHANGELOG.rst"
-directory = "changelog"
+[tool.pytest.ini_options]
+addopts = "--cov=your_package_name --cov-report=lcov --cov-report=term-missing"
