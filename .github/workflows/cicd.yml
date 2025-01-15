@@ -38,3 +38,9 @@ jobs:
       with:
         name: coverage-report
         path: coverage.lcov
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.COVER_TOKEN }}
+        path-to-lcov: coverage.lcov
