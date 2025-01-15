@@ -33,4 +33,4 @@ smart-pokedex = "smart_pokedex.cli.cli:run_pokemon_classification"
 
 
 [tool.pytest.ini_options]
-addopts = "--cov=your_package_name --cov-report=lcov --cov-report=term-missing"
+addopts = "--cov=smart_pokedex --cov-report=lcov --cov-report=term-missing"
