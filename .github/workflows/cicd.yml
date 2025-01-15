@@ -40,7 +40,7 @@ jobs:
         path: coverage.lcov
 
     - name: Coveralls
-      uses: coverallsapp/github-action@master
+      uses: coverallsapp/github-action@v2
       with:
-        github-token: ${{ secrets.COVER_TOKEN }}
+        github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
         path-to-lcov: coverage.lcov
