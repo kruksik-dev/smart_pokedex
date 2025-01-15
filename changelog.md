@@ -11,3 +11,4 @@
 - Added `pokemon.keras` file for storing the trained model in [`smart_pokedex/model/resources/pokemon.keras`](smart_pokedex/model/resources/pokemon.keras).
 - Added `PokemonImageLoader` class for downloading Pokémon images from the PokeAPI in [`smart_pokedex/utils/image_loader.py`](smart_pokedex/utils/image_loader.py).
 - Added logging setup functions in [`smart_pokedex/utils/logger.py`](smart_pokedex/utils/logger.py).
+- Added CICD actions with testing stage
