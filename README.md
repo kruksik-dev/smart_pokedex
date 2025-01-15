@@ -2,6 +2,7 @@
 # Smart Pokedex 
 
 ![Build Status](https://github.com/kruksik-dev/smart_pokedex/actions/workflows/cicd.yml/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/kruksik-dev/smart_pokedex/badge.svg?branch=main)](https://coveralls.io/github/kruksik-dev/smart_pokedex?branch=main)
 
 **Smart Pokedex** is a Python-based tool designed for classifying Pokémon images using machine learning models built with TensorFlow. The tool provides functionality to load a pre-trained model, process Pokémon image data, and make predictions on unseen images. It supports model training, evaluation, and saving, as well as flexible handling of Pokémon image datasets.
 
