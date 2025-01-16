@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.2]
+
+### Added
+- Dockerization has been added, which allows you to run the application inside a container
+- The prepared image was placed directly on the dockerhub: kruksik/smart pokedex
+- Updated CICD 
+
 ## [0.0.1]
 
 ### Added
