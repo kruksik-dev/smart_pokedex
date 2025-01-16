@@ -87,7 +87,7 @@ If you prefer not to use a Dev Container, you can set up your environment locall
    Copy the repository to your local machine:
 
    ```bash
-   git clone https://https://github.com/kruksik-dev/smart_pokedex
+   git clone https://github.com/kruksik-dev/smart_pokedex
    cd smart_pokedex
    ```
 
@@ -108,7 +108,28 @@ If you prefer not to use a Dev Container, you can set up your environment locall
    ```
 
 
-## Usage
+## 🛠 Usage
+
+### Using Docker 🐳
+
+You can also use Docker to run the Smart Pokedex tool. The Docker image is available in the Docker Hub repository.
+
+## Pull the Docker image
+
+To pull the Docker image, use the following command:
+
+```bash
+docker pull kruksik/smart_pokedex:latest
+```
+
+## Run the Docker container
+To run the Docker container and classify a Pokémon image, use the following command:
+
+```bash
+docker run --rm -v /path_to_local_image:/image kruksik/smart_pokedex
+```
+
+Where **/path_to_local_image** is the path to the Pokémon image you want to classify on your local machine. The command will mount the image into the container and run the classification
 
 ### Run Classification with CLI
 
